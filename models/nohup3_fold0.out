@@ -1,0 +1,5 @@
+/home/mohammadr/torch/install/bin/luajit: cannot open main.lua: No such file or directory
+stack traceback:
+	[C]: in function 'dofile'
+	...madr/torch/install/lib/luarocks/rocks/trepl/scm-1/bin/th:145: in main chunk
+	[C]: at 0x00406670
