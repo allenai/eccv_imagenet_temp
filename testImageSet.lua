@@ -37,16 +37,20 @@ cutorch.setDevice(opt.GPU)
 -- debugger = require('fb.debugger')
 -- debugger.enter()
 
--- local trainCache = paths.concat(opt.cache, 'trainCache.t7')
--- local testCache = paths.concat(opt.cache, 'testCache.t7')
---local meanstdCache = paths.concat(opt.cache, 'meanstdCache.t7')
+local trainCache = paths.concat(opt.cache, 'trainCache.t7')
+local testCache = paths.concat(opt.cache, 'testCache.t7')
+local meanstdCache = paths.concat(opt.cache, 'meanstdCache.t7')
 
 local loadSize   = {3, 224, 224}
 local sampleSize = {3, 224, 224}
 local mean,std
---local meanstd = torch.load(meanstdCache)
-mean = 0
-std = 0
+local meanstd = torch.load(meanstdCache)
+--mean = 0
+--std = 0
+mean = meanstd.mean
+std = meanstd.std
+print(mean)
+print(std)
 print('Loaded mean and std from cache.')
 
 local oH = sampleSize[2]
@@ -55,7 +59,7 @@ local numCrops
 if useJitter == 1 then
 	numCrops = 10
 else
-	numCrops = 4
+	numCrops = 1
 end
 local out = torch.Tensor(numCrops, 3, oW, oH)
 
@@ -72,12 +76,10 @@ fileCounter = 1
 for path in pf:lines() do
     	local file_name
 	local pngFound = false
-	print(path)
     	for i in string.gmatch(path, "([^/]+.png)") do
   	    file_name = i
 	    pngFound = true
 	end
-	print(pngFound)
 
 	if pngFound then
 	   if (fileCounter % 100) == 0 then print("Processing file ", fileCounter) end
@@ -93,18 +95,17 @@ for path in pf:lines() do
               input:size(224 * iW / iH, 224);
            end
            iW, iH = input:size();
-	   print(iW)
            local im = input:toTensor('float','RGB','DHW')
-	   local rotated_im = im:clone()
-	   rotated_im = rotated_im:transpose(2,3) -- ASSUMES A SQUARE
+	   --local rotated_im = im:clone()
+	   --rotated_im = rotated_im:transpose(2,3) -- ASSUMES A SQUARE
 		
         -- mean/std
-          --for i=1,3 do -- channels
-           --  if mean then im[{{i},{},{}}]:add(-mean[i]) end
+          for i=1,3 do -- channels
+             if mean then im[{{i},{},{}}]:add(-mean[i]) end
   	   --if mean then rotated_im[{{i},{},{}}]:add(-mean[i]) end
-            -- if  std then im[{{i},{},{}}]:div(std[i]) end
+             if  std then im[{{i},{},{}}]:div(std[i]) end
   	  -- if  std then rotated_im[{{i},{},{}}]:div(std[i]) end
-          --end
+          end
 
           local w1 = math.ceil((iW-oW)/2)
           local h1 = math.ceil((iH-oH)/2)
@@ -129,7 +130,7 @@ for path in pf:lines() do
 		end
 
         img = out
-        model:evaluate()
+	model:evaluate()
         predictions = model:forward(img:cuda())
 	-- model:remove(24)
 	--print(model)
@@ -137,8 +138,8 @@ for path in pf:lines() do
 	for py=1,1 do
             for px=1,2 do
 	      -- print(predictions)
-	      
-		resultsFile:write(",",predictions[py][px])
+	      	
+		resultsFile:write(",",predictions[px])
               end
            end
        	 resultsFile:write("\n")

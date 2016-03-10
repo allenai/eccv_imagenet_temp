@@ -129,6 +129,8 @@ for path in pf:lines() do
         img = out
         model:evaluate()
         predictions = model:forward(img:cuda())
+	print("??")
+	print(predictions)
 	-- model:remove(24)
 	--print(model)
 	resultsFile:write(file_name)
